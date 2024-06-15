@@ -1,7 +1,14 @@
 import React, { Component } from 'react'
 import NewItem from './NewItem'
-
+import Loading from './Loading';
+import PropType from 'prop-types';
 export class News extends Component {
+  static defaultProps = {
+        category: "general",
+        country: "in",
+        pageSize:25,
+  }
+  
     //  articles = [
             // {
             //   "source": {
@@ -256,9 +263,9 @@ export class News extends Component {
             //     "name": "The Wall Street Journal"
             //   },
             //   "author": "Joshua Robinson",
-            //   "title": "Newest Sports Prodigy Is 16-Year-Old Who Lives on Kebabs and Orange Soda...",
+            //   "title": "Newest category Prodigy Is 16-Year-Old Who Lives on Kebabs and Orange Soda...",
             //   "description": "Luke Littler, recently a high school junior from northern England, came up just short of becoming the youngest world champion in the history of professional darts",
-            //   "url": "https://www.wsj.com/sports/darts-world-championship-luke-littler-1f2fc9c7",
+            //   "url": "https://www.wsj.com/category/darts-world-championship-luke-littler-1f2fc9c7",
             //   "urlToImage": "https://images.wsj.net/im-907619/social",
             //   "publishedAt": "2024-01-04T12:43:37Z",
             //   "content": "Luke Littler was one of the few people inside Alexandra Palacethe rowdy, beer-soaked, spiritual home of British dartswho wasnt old enough on Wednesday night to buy himself a drink.\r\nAnd yet, he was t… [+488 chars]"
@@ -459,47 +466,47 @@ export class News extends Component {
             //   "content": "One thing already seems certain about 2024: AI is going to need to start showing the money. Whether it can is a whole other question.\r\nExcitement for generative artificial intelligence sparked by Ope… [+578 chars]"
             // },
     // ]
-    constructor(){
-        super();
+
+    constructor(props){
+        super(props);
         this.state={
             articles:[],
-            page:1
+            page:1,
+            load:true
         }
+        document.title=`${this.capitalize(this.props.category)}-NewsDaily`;
+    }
+    capitalize=(string)=>{
+      return string.charAt(0).toUpperCase()+string.slice(1);
+    }
+    async updateNews(){
+      let url=`https://newsapi.org/v2/top-headlines?country=${this.props.country}&category=${this.props.category}&apiKey=${this.props.api}`;
+        this.setState({
+          load:true
+        })
+        let data= await fetch(url);
+        let parsedData=await data.json();
+        console.log(parsedData);
+        this.setState({
+          articles: parsedData.articles,
+          totalResults: parsedData.totalResults,
+          load: false
+        })  
     }
     async componentDidMount(){
-        if(this.state.page+1>Math.ceil(this.state.totalResults/25)){
-
-        }
-        else{let url="https://newsapi.org/v2/everything?domains=wsj.com&apiKey=48889913118e4249b1f29c308eefccdf&pageSize=25";
-        let data= await fetch(url);
-        let parsedData=await data.json();
-        console.log(parsedData);
-        this.setState({
-          articles: parsedData.articles,
-          totalResults: parsedData.totalResults
-        })  }
-
-
-    }
+         this.updateNews(); 
+     }
     handelNext=async()=>{
-        let url=`https://newsapi.org/v2/everything?domains=wsj.com&apiKey=48889913118e4249b1f29c308eefccdf&page=${this.state.page+1}&pageSize=25`;
-        let data= await fetch(url);
-        let parsedData=await data.json();
-        console.log(parsedData);
-        this.setState({
-          articles: parsedData.articles,
-          page:this.state.page+1.
-         })
+      this.setState({
+        page: (this.props.page)+1
+      })
+      this.updateNews()
     }
     handelPrev=async()=>{
-        let url=`https://newsapi.org/v2/everything?domains=wsj.com&apiKey=48889913118e4249b1f29c308eefccdf&page=${this.state.page-1}&pageSize=25`;
-        let data= await fetch(url);
-        let parsedData=await data.json();
-        console.log(parsedData);
       this.setState({
-        articles:parsedData.articles,
-        page:this.state.page-1,
+        page: this.props.page-1
       })
+      this.updateNews();
     }
   render() {
     return (
@@ -507,11 +514,12 @@ export class News extends Component {
         
 
       <div className="container my-7">
-      <h1 className="text-blockquote my-4">Top business headlines in the US right now</h1>
+      <h1 className="text-blockquote my-4">Top {this.capitalize(this.props.category)} Headlines</h1>
+      {this.state.load && <Loading/>}
        <div className="row my-3">
-       {this.state.articles.map((element)=>{
+       {!this.state.load && this.state.articles.map((element)=>{
           return   <div className="col md-4 my-2" key={element.url}>
-        <NewItem title={element.title?element.title:""} description={element.description?element.description.slice(0,88):""} url={element.urlToImage} newsurl={element.url}/>
+        <NewItem title={element.title?element.title:""} description={element.description?element.description.slice(0,88):""} url={element.urlToImage} newsurl={element.url} date={element.publishedAt.slice(0,10)} source={element.source.name}/>
         </div>
         })}
 
